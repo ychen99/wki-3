@@ -7,7 +7,11 @@ Dieses Repository enthält den Demo-Code zum Projektseminar "Wettbewerb künstli
 2. Richte ein eigenes privates Repository auf github/gitlab ein. Darüber könnt ihr später die Abgaben eurer Modelle machen. 
 3. Füge unseren Account als Collaborator hinzu (Github: Name="wettbewerbKI", Gitlab: auf Anfrage)
 3. Lege ein Python Environment an. Am Besten funktioniert das mit [Anaconda](https://www.anaconda.com/products/distribution), und `conda create -n wki-ss23 python=3.8`
-4. Installiere alle von uns verwendeten Pakete, welche in "requirements.txt" gelistet sind mit `pip install -r requirements.txt` 
+4. Installiere alle von uns verwendeten Pakete in diesem Environment, welche in "requirements.txt" gelistet sind mit
+```
+ conda activate wki-ss23
+ pip install -r requirements.txt
+``` 
 5. Probiere aus, ob alles funktioniert, indem du einmal unseren Trainings, Predict und Scoring Code bei dir ausführst:
 ```
 python train.py
