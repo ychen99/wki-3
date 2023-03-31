@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 
+# TODO replace by new scoring code
 
 def score(test_dir='../test/'):
         

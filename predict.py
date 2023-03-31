@@ -4,39 +4,38 @@
 Skript testet das vortrainierte Modell
 
 
-@author: Christoph Hoog Antink, Maurice Rohr
+@author:  Maurice Rohr, Dirk Schweickard
 """
 
-import csv
-import scipy.io as sio
-import matplotlib.pyplot as plt
+
 import numpy as np
-from ecgdetectors import Detectors
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
+
+# TODO should only get one recording at a time
+# TODO update to suit current objective
+# TODO test if fast enough to run in loop
 
 ###Signatur der Methode (Parameter und Anzahl return-Werte) darf nicht verändert werden
-def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[str], model_name : str='model.npy',is_binary_classifier : bool=False) -> List[Tuple[str,str]]:
+def predict_labels(channels : List[str], data : np.ndarray, fs : float, reference_system: str, model_name : str='model.npy') -> Dict[str,Any]:
     '''
     Parameters
     ----------
-    model_name : str
-        Dateiname des Models. In Code-Pfad
-    ecg_leads : list of numpy-Arrays
-        EKG-Signale.
+    channels : List[str]
+        Namen der übergebenen Kanäle
+    data : ndarray
+        EEG-Signale der angegebenen Kanäle
     fs : float
         Sampling-Frequenz der Signale.
-    ecg_names : list of str
-        eindeutige Bezeichnung für jedes EKG-Signal.
+    reference_system :  str
+        Welches Referenzsystem wurde benutzt, "Bezugselektrode", nicht garantiert korrekt!
     model_name : str
-        Name des Models, kann verwendet werden um korrektes Model aus Ordner zu laden
-    is_binary_classifier : bool
-        Falls getrennte Modelle für F1 und Multi-Score trainiert werden, wird hier übergeben, 
-        welches benutzt werden soll
+        Name eures Models,das ihr beispielsweise bei Abgabe genannt habt. 
+        Kann verwendet werden um korrektes Model aus Ordner zu laden
     Returns
     -------
-    predictions : list of tuples
-        ecg_name und eure Diagnose
+    prediction : Dict[str,Any]
+        enthält Vorhersage, ob Anfall vorhanden und wenn ja wo (Onset+Offset)
     '''
 
 #------------------------------------------------------------------------------
@@ -44,23 +43,22 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
     with open(model_name, 'rb') as f:  
         th_opt = np.load(f)         # Lade simples Model (1 Parameter)
 
-    detectors = Detectors(fs)        # Initialisierung des QRS-Detektors
-
-    predictions = list()
     
-    for idx,ecg_lead in enumerate(ecg_leads):
-        r_peaks = detectors.hamilton_detector(ecg_lead)     # Detektion der QRS-Komplexe
-        sdnn = np.std(np.diff(r_peaks)/fs*1000) 
-        if sdnn < th_opt:
-            predictions.append((ecg_names[idx], 'N'))
-        else:
-            predictions.append((ecg_names[idx], 'A'))
-        if ((idx+1) % 100)==0:
-            print(str(idx+1) + "\t Dateien wurden verarbeitet.")
-            
-            
-#------------------------------------------------------------------------------    
-    return predictions # Liste von Tupels im Format (ecg_name,label) - Muss unverändert bleiben!
+    # Mach irgendwas        
+     
+     
+    seizure_present = True # gibt an ob eine Anfall vorliegt
+    seizure_confidence = 0.5 # gibt die Unsicherheit des Modells an (optional)
+    onset = 4.2   # gibt den Beginn des Anfalls an (in Sekunden)
+    onset_confidence = 0.99 # gibt die Unsicherheit bezüglich des Beginns an (optional)
+    offset = np.inf  # gibt das Ende des Anfalls an (optional)
+    offset_confidence = 0   # gibt die Unsicherheit bezüglich des Endes an (optional)
+#------------------------------------------------------------------------------  
+    prediction = {"seizure_present":seizure_present,"seizure_confidence":seizure_confidence,
+                   "onset":onset,"onset_confidence":onset_confidence,"offset":offset,
+                   "offset_confidence":offset_confidence}
+  
+    return prediction # Dictionary mit predction - Muss unverändert bleiben!
                                
                                
         

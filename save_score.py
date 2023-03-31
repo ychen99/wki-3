@@ -10,6 +10,8 @@ import argparse
 import datetime
 import os, csv
 
+# deprecated 
+# TODO think about if we need this
 
 if __name__=='__main__':
     
