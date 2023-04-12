@@ -14,8 +14,6 @@ import os
 
 
 ### Achtung! Diese Funktion nicht veraendern.
-# TODO Passe an an neues Epilepsie Daten
-# TODO resampling überdenken
 def load_references(folder: str = '../training') -> Tuple[List[str], List[List[str]],
                                                           List[np.ndarray],  List[float],
                                                           List[str], List[Tuple[bool,float,float]]]:
@@ -51,33 +49,32 @@ def load_references(folder: str = '../training') -> Tuple[List[str], List[List[s
     data: List[np.ndarray] = []
     sampling_frequencies: List[float] = []
     reference_systems: List[str] = []
-    eeg_labels: List[Tuple[bool,float,float]]
+    eeg_labels: List[Tuple[bool,float,float]] = []
     
     
-    ecg_leads: List[np.ndarray] = []
-    ecg_labels: List[str] = []
-    ecg_names: List[str] = []
-    # Setze sampling Frequenz
-    fs: int = 300
     # Lade references Datei
     with open(os.path.join(folder, 'REFERENCE.csv')) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
+        csv_reader = csv.reader(csv_file, delimiter=';')
         # Iteriere über jede Zeile
         for row in csv_reader:
-            # Lade MatLab Datei mit EKG lead and label
-            data = sio.loadmat(os.path.join(folder, row[0] + '.mat'))
-            ecg_leads.append(data['val'][0])
-            ecg_labels.append(row[1])
-            ecg_names.append(row[0])
+            ids.append(row[0])
+            eeg_labels.append((int(row[1]),float(row[2]),float(row[3])))
+            # Lade MatLab Datei
+            eeg_data = sio.loadmat(os.path.join(folder, row[0] + '.mat'),simplify_cells=True)
+            ch_names = eeg_data.get('channels')
+            ch_names = [x.strip(' ') for x in ch_names]
+            channels.append(ch_names) 
+            data.append(eeg_data.get('data'))
+            sampling_frequencies.append(eeg_data.get('fs'))
+            reference_systems.append(eeg_data.get('reference_system'))
     # Zeige an wie viele Daten geladen wurden
-    print("{}\t Dateien wurden geladen.".format(len(ecg_leads)))
+    print("{}\t Dateien wurden geladen.".format(len(ids)))
     return ids, channels, data, sampling_frequencies, reference_systems, eeg_labels
 
 
 
 
 ### Achtung! Diese Funktion nicht veraendern.
-# TODO passen an an neues Thema
 #predictions = {"id":id,"seizure_present":seizure_present,"seizure_confidence":seizure_confidence,
 #                   "onset":onset,"onset_confidence":onset_confidence,"offset":offset,
 #                   "offset_confidence":offset_confidence}
@@ -126,7 +123,7 @@ def save_predictions(predictions: List[Dict[str,Any]], folder: str=None) -> None
         # Gebe Info aus wie viele labels (predictions) gespeichert werden
         print("{}\t Labels wurden geschrieben.".format(len(predictions)))
         
-# TODO schreibe Funktion zur Bildung der 3 Montagen Fp1-F2, Fp2-F4, C3-P3
+
 def get_3montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.ndarray,bool]:
     """
     Funktion berechnet die 3 Montagen Fp1-F2, Fp2-F4, C3-P3 aus den gegebenen Ableitungen (Montagen)
@@ -146,10 +143,31 @@ def get_3montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.n
         1 , falls eine oder mehr Montagen fehlt, sonst 0
 
     """   
-    pass
+    montages = []
+    _,m = np.shape(data)
+    montage_data = np.zeros([3,m])
+    montage_missing = 0
+    try:
+        montage_data[0,:] = data[channels.index('Fp1')] - data[channels.index('F3')]
+        montages.append('Fp1-F3')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    try:
+        montage_data[1,:] = data[channels.index('Fp2')] - data[channels.index('F4')]
+        montages.append('Fp2-F4')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    try:
+        montage_data[2,:] = data[channels.index('C3')] - data[channels.index('P3')]
+        montages.append('C3-P3')
+    except:
+        montage_missing = 1
+        montages.append('error')
 
+    return (montages,montage_data,montage_missing)
 
-# TODO schreibe Funktion zur Bildung der 6 Montagen Fp1-F2, Fp2-F4, C3-P3, F3-C3, F4-C4, C4-P4
 def get_montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.ndarray,bool]:
     """
     Funktion berechnet die 6 Montagen Fp1-F2, Fp2-F4, C3-P3, F3-C3, F4-C4, C4-P4 aus den gegebenen Ableitungen (Montagen)
@@ -169,5 +187,44 @@ def get_montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.nd
         1 , falls eine oder mehr Montagen fehlt, sonst 0
 
     """  
-    pass
-
+    montages = []
+    _,m = np.shape(data)
+    montage_data = np.zeros([6,m])
+    montage_missing = 0
+    try:
+        montage_data[0,:] = data[channels.index('Fp1')] - data[channels.index('F3')]
+        montages.append('Fp1-F3')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    try:
+        montage_data[1,:] = data[channels.index('Fp2')] - data[channels.index('F4')]
+        montages.append('Fp2-F4')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    try:
+        montage_data[2,:] = data[channels.index('C3')] - data[channels.index('P3')]
+        montages.append('C3-P3')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    try:
+        montage_data[3,:] = data[channels.index('F3')] - data[channels.index('C3')]
+        montages.append('F3-C3')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    try:
+        montage_data[4,:] = data[channels.index('F4')] - data[channels.index('C4')]
+        montages.append('F4-C4')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    try:
+        montage_data[5,:] = data[channels.index('C4')] - data[channels.index('P4')]
+        montages.append('C4-P4')
+    except:
+        montage_missing = 1
+        montages.append('error')
+    return (montages,montage_data,montage_missing)
