@@ -86,9 +86,7 @@ def score(test_dir='../test/'):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Predict given Model')
-    # "Y:/External Databases/TUH EEG Seizure Corpus/data_mat/mini_mat_wki"
-    #parser.add_argument('--test_dir', action='store',type=str,default='../test/')
-    parser.add_argument('--test_dir', action='store',type=str,default='Y:/External Databases/TUH EEG Seizure Corpus/data_mat/mini_mat_wki')
+    parser.add_argument('--test_dir', action='store',type=str,default='../test/')
     args = parser.parse_args()
     F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix = score(args.test_dir)
     print("F1:",F1,"\t Latenz:",detection_error_onset)
