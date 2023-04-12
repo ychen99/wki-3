@@ -14,8 +14,6 @@ import os
 
 
 ### Achtung! Diese Funktion nicht veraendern.
-# TODO Passe an an neues Epilepsie Daten
-# TODO resampling überdenken
 def load_references(folder: str = '../training') -> Tuple[List[str], List[List[str]],
                                                           List[np.ndarray],  List[float],
                                                           List[str], List[Tuple[bool,float,float]]]:
@@ -50,26 +48,26 @@ def load_references(folder: str = '../training') -> Tuple[List[str], List[List[s
     data: List[np.ndarray] = []
     sampling_frequencies: List[float] = []
     reference_systems: List[str] = []
-    eeg_labels: List[Tuple[bool,float,float]]
+    eeg_labels: List[Tuple[bool,float,float]] = []
     
     
-    ecg_leads: List[np.ndarray] = []
-    ecg_labels: List[str] = []
-    ecg_names: List[str] = []
-    # Setze sampling Frequenz
-    fs: int = 300
     # Lade references Datei
     with open(os.path.join(folder, 'REFERENCE.csv')) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
+        csv_reader = csv.reader(csv_file, delimiter=';')
         # Iteriere über jede Zeile
         for row in csv_reader:
-            # Lade MatLab Datei mit EKG lead and label
-            data = sio.loadmat(os.path.join(folder, row[0] + '.mat'))
-            ecg_leads.append(data['val'][0])
-            ecg_labels.append(row[1])
-            ecg_names.append(row[0])
+            ids.append(row[0])
+            eeg_labels.append((int(row[1]),float(row[2]),float(row[3])))
+            # Lade MatLab Datei
+            eeg_data = sio.loadmat(os.path.join(folder, row[0] + '.mat'),simplify_cells=True)
+            ch_names = eeg_data.get('channels')
+            ch_names = [x.strip(' ') for x in ch_names]
+            channels.append(ch_names) 
+            data.append(eeg_data.get('data'))
+            sampling_frequencies.append(eeg_data.get('fs'))
+            reference_systems.append(eeg_data.get('reference_system'))
     # Zeige an wie viele Daten geladen wurden
-    print("{}\t Dateien wurden geladen.".format(len(ecg_leads)))
+    print("{}\t Dateien wurden geladen.".format(len(ids)))
     return ids, channels, data, sampling_frequencies, reference_systems, eeg_labels
 
 
