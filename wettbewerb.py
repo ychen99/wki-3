@@ -20,6 +20,7 @@ def load_references(folder: str = '../training') -> Tuple[List[str], List[List[s
                                                           List[np.ndarray],  List[float],
                                                           List[str], List[Tuple[bool,float,float]]]:
     """
+    Liest Referenzdaten aus .mat (Messdaten) und .csv (Label) Dateien ein.
     Parameters
     ----------
     folder : str, optional
