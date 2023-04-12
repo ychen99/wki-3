@@ -9,83 +9,148 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from wettbewerb import load_references
+from wettbewerb import load_references, get_3montages
 import mne
 from scipy import signal as sig
 import ruptures as rpt
+import json
 
 
 ### if __name__ == '__main__':  # bei multiprocessing auf Windows notwendig
 
+training_folder  = 'Y:/External Databases/TUH EEG Seizure Corpus/data_mat/mini_mat_wki'
+
+
+ids, channels, data, sampling_frequencies, reference_systems, eeg_labels = load_references(training_folder) # Importiere EEG-Dateien, zugehörige Kanalbenennung, Sampling-Frequenz (Hz) und Name (meist fs=256 Hz), sowie Referenzsystem
+
+
+
+# Seizure Detektion (Der Beispielcode speichert hier ein Modell)
+# Initialisiere Datenarrays
+feature = []
+label = []
+
+for i,_id in enumerate(ids):
+    _fs = sampling_frequencies[i]
+    _eeg_signals = data[i]
+    _eeg_label = eeg_labels[i]
+    label.append(_eeg_label[0])
+    # Berechne Montage
+    _montage, _montage_data, _is_missing = get_3montages(channels[i], _eeg_signals)
+    signal_std = np.zeros(len(_montage))
+    for j, signal_name in enumerate(_montage):
+        # Ziehe erste Montage des EEG
+        signal = _montage_data[j]
+        # Wende Notch-Filter an um Netzfrequenz zu dämpfen
+        signal_notch = mne.filter.notch_filter(x=signal, Fs=_fs, freqs=np.array([50.,100.]), n_jobs=2, verbose=False)
+        # Wende Bandpassfilter zwischen 0.5Hz und 70Hz um Rauschen aus dem Signal zu filtern
+        signal_filter = mne.filter.filter_data(data=signal_notch, sfreq=_fs, l_freq=0.5, h_freq=70.0, n_jobs=2, verbose=False)
+        
+
+        signal_std[j] = np.std(signal_filter)
+
+    # Nur der Kanal mit der maximalen Standardabweichung wird berücksichtigt
+    signal_std_max = signal_std.max()
+    feature.append(signal_std_max)
+
+X = np.array(feature)
+Y = np.array(label)    
+best_f1 = 0
+th_opt = 0
+for th in np.arange(X.min(),X.max(),(X.max()-X.min())/1e5):
+    pred = X>th
+    TP = np.sum((pred==Y) & (Y==1))
+    FP = np.sum((pred==1) & (Y==0))
+    FN = np.sum((pred==0) & (Y==1))
+    F1 = 2*TP/(2*TP+FP+FN)  
+    if F1 >best_f1:
+        th_opt = th
+        best_f1 = F1
+print('Optimaler Threshold ist', th_opt,' bei F1 auf Trainingsdaten von',best_f1)
+
+# Speichere Modell
+model_params = {'std_thresh':th_opt}
+with open('model.json', 'w', encoding='utf-8') as f:
+    json.dump(model_params, f, ensure_ascii=False, indent=4)
+    print('Seizure Detektionsmodell wurde gespeichert!')
+        
+
+
+# Onset Detektion (Der Beispielcode speichert hier kein Modell, da keine Parameter gelernt werden)
+# Initialisiere Datenarrays
 onset_list_predict = []
 onset_list = []
+seizure_id_list = []
 
-ids, channels, data, sampling_frequencies, reference_systems, eeg_labels = load_references('Y:/External Databases/TUH EEG Seizure Corpus/data_mat/test_mat_wki') # Importiere EKG-Dateien, zugehörige Diagnose, Sampling-Frequenz (Hz) und Name (meist fs=300 Hz)
-
-for i in range(len(ids)):
-    fs = sampling_frequencies[i]
-    eeg_signals = data[i]
-    eeg_label = eeg_labels[i]
-    if eeg_label[0]:
-        onset_list.append(eeg_label[1])
-        for j, signal_name in enumerate(channels[i]):
-            # Get one channel of EEG
-            signal = eeg_signals[j]
-            # Apply notch filter to cancel out supply frequency
-            signal_notch = mne.filter.notch_filter(x=signal, Fs=fs, freqs=np.array([50.,100.]), n_jobs=2, verbose=False)
-            # Apply bandpass filter between 0.5Hz and 70Hz to remove some noise from the signal
-            signal_filter = mne.filter.filter_data(data=signal_notch, sfreq=fs, l_freq=0.5, h_freq=70.0, n_jobs=2, verbose=False)
-            #Parameter erklären
-            #Überkommentieren
-            #Compute short time fourier transformation of the signal, signal_filterd = filtered signal of channel, fs = sampling frequency, nperseg = length of each segment
+for i,_id in enumerate(ids):
+    _fs = sampling_frequencies[i]
+    _eeg_signals = data[i]
+    _eeg_label = eeg_labels[i]
+    if _eeg_label[0]:
+        onset_list.append(_eeg_label[1])
+        seizure_id_list.append(_id)
+        # Berechne Montage
+        _montage, _montage_data, _is_missing = get_3montages(channels[i], _eeg_signals)
+        for j, signal_name in enumerate(_montage):
+            # Ziehe erste Montage des EEG
+            signal = _montage_data[j]
+            # Wende Notch-Filter an um Netzfrequenz zu dämpfen
+            signal_notch = mne.filter.notch_filter(x=signal, Fs=_fs, freqs=np.array([50.,100.]), n_jobs=2, verbose=False)
+            # Wende Bandpassfilter zwischen 0.5Hz und 70Hz um Rauschen aus dem Signal zu filtern
+            signal_filter = mne.filter.filter_data(data=signal_notch, sfreq=_fs, l_freq=0.5, h_freq=70.0, n_jobs=2, verbose=False)
+            
+            # Berechne short time fourier transformation des Signal: signal_filtered = filtered signal of channel, fs = sampling frequency, nperseg = length of each segment
             # Output f= array of sample frequencies, t = array of segment times, Zxx = STFT of signal
-            f, t, Zxx = sig.stft(signal_filter, fs, nperseg=fs * 3)
-            # Calculate step size of frequency
+            f, t, Zxx = sig.stft(signal_filter, _fs, nperseg=_fs * 3)
+            # Berechne Schrittweite der Frequenz
             df = f[1] - f[0]
-            #Compute energy of the parts based on real and imaginary values of STFT
+            # Berechne Engergie (Betrag) basierend auf Real- und Imaginärteil der STFT
             E_Zxx = np.sum(Zxx.real ** 2 + Zxx.imag ** 2, axis=0) * df
 
-            # Check if new array per patient has been created
+    
+
+            # Erstelle neues Array in der ersten Iteration pro Patient
             if j == 0:
-                # Initialize array with energy signal of first channel
+                # Initilisiere Array mit Energiesignal des ersten Kanals
                 E_array = np.array(E_Zxx)
             else:
-                # Append energy signal of channel to the array (stack it)
+                # Füge neues Energiesignal zu vorhandenen Kanälen hinzu (stack it)
                 E_array = np.vstack((E_array, np.array(E_Zxx)))
+                
 
-        #Sum up energy of all channels
+        # Berechne Gesamtenergie aller Kanäle für jeden Zeitppunkt
         E_total = np.sum(E_array, axis=0)
-        # Get the index for the time at which the energy is maximum
+        # Berechne Stelle der maximalen Energie
         max_index = E_total.argmax()
 
-        # Compute changepoints of the summed up signal
-        # Check if index is at the beginning of the signal (since we are choosing a changepoint before the maximum method will cuase an error in that case
+        # Berechne "changepoints" der Gesamtenergie
+        # Falls Maximum am Anfang des Signals ist muss der Onset ebenfalls am Anfang sein und wir können keinen "changepoint" berechnen
         if max_index == 0:
-            # In this case seizure onset is at the beginning of the signal
             onset_list_predict.append(0.0)
         else:
-            # Compute changepoints of the signal with method from ruptures package
-            # Setup linearly penalized segmentation method to detect changepoints in signal with rbf cost function
+            # Berechne "changepoint" mit dem ruptures package
+            # Setup für  "linearly penalized segmentation method" zur Detektion von changepoints im Signal mi rbf cost function
             algo = rpt.Pelt(model="rbf").fit(E_total)
-            # Get sorted list of changepoints, pen = penalty value
+            # Berechne sortierte Liste der changepoints, pen = penalty value
             result = algo.predict(pen=10)
-            #Indices are shifted by one so subtract one
+            #Indices sind ums 1 geshiftet
             result1 = np.asarray(result) - 1
-            # Get the changepoints before the maximum
+            # Selektiere changepoints vor Maximum
             result_red = result1[result1 < max_index]
-            # Check if changepoint was found
+            # Falls es mindestens einen changepoint gibt nehmen wir den nächsten zum Maximum
             if len(result_red)<1:
-                # If no changepoint was found, seizure onset is likely to be close to maximum
-                print('no element')
+                # Falls keine changepoint gefunden wurde raten wir, dass er "nahe" am Maximum ist
+                print('No changepoint, taking maximum')
                 onset_index = max_index
             else:
-                # Choose the changepoint which is closest to the maximum = seizure Onset
+                # Der changepoint entspricht gerade dem Onset 
                 onset_index = result_red[-1]
-            # Append seizure onset to list
+            # Füge Onset zur Liste der Onsets hinzu
             onset_list_predict.append(t[onset_index])
 
 # Compute absolute error between compute seizure onset and real onset based on doctor annotations
 prediction_error = np.abs(np.asarray(onset_list_predict) - np.asarray(onset_list))
+print('Mittlerer Onset Prädiktionsfehler Training:', np.mean(prediction_error))
 
 # Plot error per patient
 plt.figure(1)
