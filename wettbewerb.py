@@ -54,7 +54,7 @@ def load_references(folder: str = '../training') -> Tuple[List[str], List[List[s
     
     # Lade references Datei
     with open(os.path.join(folder, 'REFERENCE.csv')) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=';')
+        csv_reader = csv.reader(csv_file, delimiter=',')
         # Iteriere über jede Zeile
         for row in csv_reader:
             ids.append(row[0])
