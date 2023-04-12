@@ -168,7 +168,7 @@ def get_3montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.n
 
     return (montages,montage_data,montage_missing)
 
-def get_montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.ndarray,bool]:
+def get_6montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.ndarray,bool]:
     """
     Funktion berechnet die 6 Montagen Fp1-F2, Fp2-F4, C3-P3, F3-C3, F4-C4, C4-P4 aus den gegebenen Ableitungen (Montagen)
     zur selben Referenzelektrode. Falls nicht alle nötigen Elektroden vorhanden sind, wird das entsprechende Signal durch 0 ersetzt. 
