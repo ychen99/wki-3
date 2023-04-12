@@ -3,8 +3,6 @@ import sys
 import pandas as pd
 import argparse
 
-# TODO replace by new scoring code
-
 
 def score(test_dir='../test/'):
         
@@ -15,7 +13,7 @@ def score(test_dir='../test/'):
         sys.exit("Es gibt keine Ground Truth")  
 
     df_pred = pd.read_csv("PREDICTIONS.csv")   # Klassifikationen
-    df_gt = pd.read_csv(os.path.join(test_dir,"REFERENCE.csv"), sep=';',header=None)  # Wahrheit
+    df_gt = pd.read_csv(os.path.join(test_dir,"REFERENCE.csv"), sep=',',header=None)  # Wahrheit
 
     N_files = df_gt.shape[0]    # Anzahl an Datenpunkten
     N_seizures = 0
@@ -88,7 +86,9 @@ def score(test_dir='../test/'):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Predict given Model')
-    parser.add_argument('--test_dir', action='store',type=str,default='../test/')
+    # "Y:/External Databases/TUH EEG Seizure Corpus/data_mat/mini_mat_wki"
+    #parser.add_argument('--test_dir', action='store',type=str,default='../test/')
+    parser.add_argument('--test_dir', action='store',type=str,default='Y:/External Databases/TUH EEG Seizure Corpus/data_mat/mini_mat_wki')
     args = parser.parse_args()
     F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix = score(args.test_dir)
     print("F1:",F1,"\t Latenz:",detection_error_onset)
