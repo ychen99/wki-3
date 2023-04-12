@@ -1,6 +1,7 @@
 import os
 import sys
 import pandas as pd
+import argparse
 
 # TODO replace by new scoring code
 
@@ -13,8 +14,8 @@ def score(test_dir='../test/'):
     if  not os.path.exists(os.path.join(test_dir, "REFERENCE.csv")):
         sys.exit("Es gibt keine Ground Truth")  
 
-    df_pred = pd.read_csv("PREDICTIONS.csv", header=None)   # Klassifikationen
-    df_gt = pd.read_csv(os.path.join(test_dir,"REFERENCE.csv"), header=None)  # Wahrheit
+    df_pred = pd.read_csv("PREDICTIONS.csv")   # Klassifikationen
+    df_gt = pd.read_csv(os.path.join(test_dir,"REFERENCE.csv"), sep=';',header=None)  # Wahrheit
 
     N_files = df_gt.shape[0]    # Anzahl an Datenpunkten
     N_seizures = 0
@@ -36,7 +37,7 @@ def score(test_dir='../test/'):
         gt_onset = df_gt[2][i]
         gt_offset = df_gt[3][i]
 
-        pred_indx = df_pred[df_pred[0]==gt_name].index.values
+        pred_indx = df_pred[df_pred['id']==gt_name].index.values
 
         if not pred_indx.size:
             print("Prediktion für " + gt_name + " fehlt, nehme \"kein Anfall\" an.")
@@ -48,12 +49,12 @@ def score(test_dir='../test/'):
             pred_offset_confidence = 0.0
         else:
             pred_indx = pred_indx[0]
-            pred_seizure_present = df_pred[1][pred_indx]
-            pred_seizure_confidence = df_pred[2][pred_indx]
-            pred_onset = df_pred[3][pred_indx]
-            pred_onset_confidence = df_pred[4][pred_indx]
-            pred_offset = df_pred[5][pred_indx]
-            pred_offset_confidence = df_pred[6][pred_indx]
+            pred_seizure_present = df_pred['seizure_present'][pred_indx]
+            pred_seizure_confidence = df_pred['seizure_confidence'][pred_indx]
+            pred_onset = df_pred['onset'][pred_indx]
+            pred_onset_confidence = df_pred['onset_confidence'][pred_indx]
+            pred_offset = df_pred['offset'][pred_indx]
+            pred_offset_confidence = df_pred['offset_confidence'][pred_indx]
         
         if gt_seizure_present:
             N_seizures += 1
@@ -63,14 +64,16 @@ def score(test_dir='../test/'):
             else:    
                 delta_t_onset = max(abs(pred_onset-gt_onset),ONSET_PENALTY)
                 delta_t_offset = max(abs(pred_offset-gt_offset),ONSET_PENALTY)
+                
+            detection_error_offset += delta_t_offset
+            detection_error_onset += delta_t_onset
   
         TP += int(gt_seizure_present and pred_seizure_present)
         TN += int((not gt_seizure_present) and (not pred_seizure_present))
         FN += int(gt_seizure_present and (not pred_seizure_present))
         FP += int((not gt_seizure_present) and  pred_seizure_present)
         
-        detection_error_offset += delta_t_offset
-        detection_error_onset += delta_t_onset
+        
     
     sensitivity = TP/(TP+FN)
     PPV = TP/(TP+FP)
@@ -84,7 +87,10 @@ def score(test_dir='../test/'):
     return F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix
 
 if __name__=='__main__':
-    F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix = score()
+    parser = argparse.ArgumentParser(description='Predict given Model')
+    parser.add_argument('--test_dir', action='store',type=str,default='../test/')
+    args = parser.parse_args()
+    F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix = score(args.test_dir)
     print("F1:",F1,"\t Latenz:",detection_error_onset)
 
 
