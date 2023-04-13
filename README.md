@@ -1,4 +1,4 @@
-# Projektseminar Wettbwerb KI in der Medizin" Sommersemester 2023
+# Projektseminar "Wettbewerb KI in der Medizin" Sommersemester 2023
 Dieses Repository enthält den Demo-Code zum Projektseminar "Wettbewerb künstliche Intelligenz in der Medizin" SoSe 2023. Das Beispiel definiert gleichzeitig das Interface zu unserem Evaluierungs-System.
 
 ## Erste Schritte
