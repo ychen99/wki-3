@@ -10,7 +10,7 @@ Skript testet das vortrainierte Modell
 
 
 from predict import predict_labels
-from wettbewerb import load_references, save_predictions
+from wettbewerb import EEGDataset, save_predictions
 import argparse
 import time
 
@@ -21,12 +21,16 @@ if __name__ == '__main__':
     parser.add_argument('--allow_fail',action='store_true',default=False)
     args = parser.parse_args()
     
-    # Importiere EEG-Dateien, zugehörige Diagnose, Sampling-Frequenz (Hz) und Name
-    ids, rec_channels, rec_data, sampling_frequencies, reference_systems, eeg_labels = load_references(args.test_dir) 
+    # Erstelle EEG Datensatz aus Ordner
+    dataset = EEGDataset(args.test_dir)
+    print(f"Teste Modell auf {len(dataset)} Aufnahmen")
+    
     predictions = list()
     start_time = time.time()
-    for id,channels,data,fs,ref_system in zip(ids, rec_channels, rec_data, sampling_frequencies, reference_systems):
-       
+    
+    # Rufe Predict Methode für jedes Element (Aufnahme) aus dem Datensatz auf
+    for item in dataset:
+        id,channels,data,fs,ref_system,eeg_label = item
         try:
             _prediction = predict_labels(channels,data,fs,ref_system,model_name=args.model_name)
             _prediction["id"] = id

@@ -37,13 +37,8 @@ def load_references(folder: str = '../training') -> Tuple[List[str], List[List[s
     reference_systems : List[str]
         Liste der Referenzsysteme. "LE", "AR", "Sz" (Zusatz-Information)
     """
-    # Check Parameter
     
-    
-    
-    assert isinstance(folder, str), "Parameter folder muss ein string sein aber {} gegeben".format(type(folder))
-    assert os.path.exists(folder), 'Parameter folder existiert nicht!'
-    # Initialisiere Listen für leads, labels und names
+    # Initialisiere Listen ids, channels, data, sampling_frequencies, refernece_systems und eeg_labels
     ids: List[str] = []
     channels: List[List[str]] = []
     data: List[np.ndarray] = []
@@ -51,25 +46,74 @@ def load_references(folder: str = '../training') -> Tuple[List[str], List[List[s
     reference_systems: List[str] = []
     eeg_labels: List[Tuple[bool,float,float]] = []
     
-    
-    # Lade references Datei
-    with open(os.path.join(folder, 'REFERENCE.csv')) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        # Iteriere über jede Zeile
-        for row in csv_reader:
-            ids.append(row[0])
-            eeg_labels.append((int(row[1]),float(row[2]),float(row[3])))
-            # Lade MatLab Datei
-            eeg_data = sio.loadmat(os.path.join(folder, row[0] + '.mat'),simplify_cells=True)
-            ch_names = eeg_data.get('channels')
-            ch_names = [x.strip(' ') for x in ch_names]
-            channels.append(ch_names) 
-            data.append(eeg_data.get('data'))
-            sampling_frequencies.append(eeg_data.get('fs'))
-            reference_systems.append(eeg_data.get('reference_system'))
+    # Erzeuge Datensatz aus Ordner und fülle Listen mit Daten
+    dataset = EEGDataset(folder)
+    for item in dataset:
+        ids.append(item[0])
+        channels.append(item[1])
+        data.append(item[2])
+        sampling_frequencies.append(item[3])
+        reference_systems.append(item[4])
+        eeg_labels.append(item[5])
+        
     # Zeige an wie viele Daten geladen wurden
     print("{}\t Dateien wurden geladen.".format(len(ids)))
     return ids, channels, data, sampling_frequencies, reference_systems, eeg_labels
+
+### Achtung! Diese Klasse nicht veraendern.
+class EEGDataset:
+    def __init__(self,folder:str) -> None:
+        """Diese Klasse stellt einen EEG Datensatz dar.
+        
+        Verwendung:
+            Erzeuge einen neuen Datensatz (ohne alle Daten zu laden) mit
+            dataset = EEGDataset("../training/")
+            len(dataset) # gibt Größe des Datensatzes zurück
+            dataset[0] # gibt erstes Element aus Datensatz zurück bestehend aus (id, channels, data, sampling_frequency, reference_system, eeg_label)
+            it = iter(dataset) # gibt einen iterator zurück auf den Datensatz,
+            next(it) # gibt nächstes Element zurück bis alle Daten einmal geholt wurden
+            for item in dataset: # iteriert einmal über den gesamten Datensatz
+                (id, channels, data, sampling_frequency, reference_system, eeg_label) = item
+                # Berechnung
+
+        Args:
+            folder (str): Ordner in dem der Datensatz bestehend aus .mat-Dateien und einer REFERENCE.csv Datei liegt
+        """
+        assert isinstance(folder, str), "Parameter folder muss ein string sein aber {} gegeben".format(type(folder))
+        assert os.path.exists(folder), 'Parameter folder existiert nicht!'
+        # Initialisiere Listen für ids und labels
+        self._folder = folder
+        self._ids: List[str] = []
+        self._eeg_labels: List[Tuple[bool,float,float]] = []
+        # Lade references Datei
+        with open(os.path.join(folder, 'REFERENCE.csv')) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            # Iteriere über jede Zeile
+            for row in csv_reader:
+                self._ids.append(row[0])
+                self._eeg_labels.append((int(row[1]),float(row[2]),float(row[3])))
+    
+    def __len__(self):
+        return len(self._ids)
+    
+    def __getitem__(self,idx) -> Tuple[str, List[str],
+                                    np.ndarray,  float,
+                                    str, Tuple[bool,float,float]]:
+        #Lade Matlab-Datei
+        eeg_data = sio.loadmat(os.path.join(self._folder, self._ids[idx] + '.mat'),simplify_cells=True)
+        ch_names = eeg_data.get('channels')
+        channels = [x.strip(' ') for x in ch_names] 
+        data = eeg_data.get('data')
+        sampling_frequency = eeg_data.get('fs')
+        reference_system = eeg_data.get('reference_system')
+        return (self._ids[idx],channels,data,sampling_frequency,reference_system,self._eeg_labels[idx])
+    
+    def get_labels(self):
+        return self._eeg_labels
+    
+        
+    
+        
 
 
 
@@ -99,6 +143,8 @@ def save_predictions(predictions: List[Dict[str,Any]], folder: str=None) -> None
     assert len(predictions) > 0, 'Parameter predictions muss eine nicht leere Liste sein.'
     assert isinstance(predictions[0], dict), \
         "Elemente der Liste predictions muss ein Dictionary sein aber {} gegeben.".format(type(predictions[0]))
+    assert "id" in predictions[0], \
+        "Prädiktionen müssen eine ID besitzen, aber Key in Dictionary nicht vorhanden"
 	
     if folder==None:
         file = "PREDICTIONS.csv"
@@ -116,10 +162,14 @@ def save_predictions(predictions: List[Dict[str,Any]], folder: str=None) -> None
         header=["id","seizure_present","seizure_confidence","onset","onset_confidence","offset","offset_confidence"]
         predictions_writer.writerow(header)
         for prediction in predictions:
-            predictions_writer.writerow([prediction["id"], prediction["seizure_present"],
-                                         prediction["seizure_confidence"],prediction["onset"],
-                                         prediction["onset_confidence"],prediction["offset"],
-                                         prediction["offset_confidence"]])
+            _id = prediction["id"]
+            _seizure_present = prediction["seizure_present"]
+            _seizure_confidence = prediction.get("seizure_confidence",1.0) 
+            _onset = prediction["onset"]
+            _onset_confidence = prediction.get("onset_confidence",1.0) 
+            _offset = prediction.get("offset",999999.0)
+            _offset_confidence = prediction.get("offset_confidence",0.0)
+            predictions_writer.writerow([_id,_seizure_present,_seizure_confidence,_onset,_onset_confidence,_offset,_offset_confidence])
         # Gebe Info aus wie viele labels (predictions) gespeichert werden
         print("{}\t Labels wurden geschrieben.".format(len(predictions)))
         
