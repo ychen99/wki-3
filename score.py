@@ -2,9 +2,34 @@ import os
 import sys
 import pandas as pd
 import argparse
+from typing import Tuple,List
 
 
-def score(test_dir='../test/'):
+def score(test_dir : str='../test/') -> Tuple[float,float,float,float,float,float,List[int]]:
+    """
+    Berechnet relevante Metriken des Wettbewerbs, sowie weitere Metriken
+    Parameters
+    ----------
+    folder : str, optional
+        Ort der Testdaten. Default Wert '../test'.
+
+    Returns
+    -------
+    performance_metric : float
+        Metrik wird für das Ranking verwendet. MAE der Onset Detektion mit Strafterm für Fehlklassifikation
+    F1 : float
+        F1-Score der Seizure-Klassifikation (Seizure present = postive Klasse)
+    sensitivity :  float
+        Sensitivität der Seizure Klassifikation
+    PPV : float
+        Positive Predictive Value der Seizure Klassifikation
+    detection_error_onset : float
+        Mittlerer Absoluter Fehler der Onset Detektion (mit oberem Limit pro Aufnahme)
+    detection_error_offset : float
+        Mittlerer Absoluter Fehler der Offset Detektion (mit oberem Limit pro Aufnahme)
+    confusion_matrix : List[int]
+        Confusion Matrix der Seizure Klassifikation [TP,FN,FP,TN]
+    """
         
     if not os.path.exists("PREDICTIONS.csv"):
         sys.exit("Es gibt keine Predictions")  
@@ -19,6 +44,7 @@ def score(test_dir='../test/'):
     N_seizures = 0
     
     ONSET_PENALTY = 60 # Sekunden, falls Anfall nicht erkannt oder größer als Penalty, wird Penalty gewertet
+    FALSE_CLASSIFICATION_PENALTY = 60 # Sekunden, falls Anfall erkannt wird, obwohl keiner vorliegt, werden Strafsekunden vergeben
 
     ## für F1-Score basierend auf Anfall erkannt / nicht erkannt
     TP = 0  # Richtig Positive
@@ -28,6 +54,7 @@ def score(test_dir='../test/'):
     
     detection_error_onset = 0 # Durchschnittliche Latenz bei der Onset Detektion
     detection_error_offset = 0 # Durchschnittliche Latenz bei der Offset Detektion
+    
 
     for i in range(N_files):
         gt_name = df_gt[0][i]
@@ -60,11 +87,12 @@ def score(test_dir='../test/'):
                 delta_t_offset = ONSET_PENALTY
                 delta_t_onset = ONSET_PENALTY
             else:    
-                delta_t_onset = max(abs(pred_onset-gt_onset),ONSET_PENALTY)
-                delta_t_offset = max(abs(pred_offset-gt_offset),ONSET_PENALTY)
+                delta_t_onset = min(abs(pred_onset-gt_onset),ONSET_PENALTY)
+                delta_t_offset = min(abs(pred_offset-gt_offset),ONSET_PENALTY)
                 
             detection_error_offset += delta_t_offset
             detection_error_onset += delta_t_onset
+            
   
         TP += int(gt_seizure_present and pred_seizure_present)
         TN += int((not gt_seizure_present) and (not pred_seizure_present))
@@ -79,16 +107,20 @@ def score(test_dir='../test/'):
     
     detection_error_offset = detection_error_offset / N_seizures
     detection_error_onset = detection_error_onset / N_seizures
+    
+    # Finale Metrik des Wettbewerbs besteht aus dem Absoluten Onset-Fehler und den Strafsekunden für fälschlich erkannte Anfälle
+    performance_metric = detection_error_onset + (FP/(FP+TN))*FALSE_CLASSIFICATION_PENALTY*(1-N_seizures/N_files)
+    
     confusion_matrix = [TP,FN,FP,TN]
     
     
-    return F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix
+    return performance_metric,F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Predict given Model')
     parser.add_argument('--test_dir', action='store',type=str,default='../test/')
     args = parser.parse_args()
-    F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix = score(args.test_dir)
-    print("F1:",F1,"\t Latenz:",detection_error_onset)
+    performance_metric,F1,sensitivity,PPV,detection_error_onset,detection_error_offset,confusion_matrix = score(args.test_dir)
+    print("WKI Metrik:", performance_metric,"\t F1:",F1,"\t Latenz:",detection_error_onset)
 
 
