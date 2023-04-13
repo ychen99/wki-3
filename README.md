@@ -12,6 +12,7 @@ Dieses Repository enthält den Demo-Code zum Projektseminar "Wettbewerb künstli
  conda activate wki-ss23
  pip install -r requirements.txt
 ``` 
+5. Lade die Trainingsdaten herunter (in moodle verlinkt oder auf epilepsy-server)
 5. Probiere aus, ob alles funktioniert, indem du einmal unseren Trainings, Predict und Scoring Code bei dir ausführst:
 ```
 python train.py
