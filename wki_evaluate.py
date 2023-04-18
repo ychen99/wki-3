@@ -32,7 +32,7 @@ which datasets to run (1 and 2, or 3 or 4)
 # datasets = [int(i) for i in datasets_string.split(',')]
 # model_variants = 'binary' #'multi', 'both'
 # model_name = 'ConvNet'
-# parameter_dict = {'nr_epochs':20,'alpha':0.1,'n_layers':10} ## Extension
+# parameter_dict = {'nr_epochs':20,'alpha':0.1,'n_layers':10} ## Extension Think about deletion
 # output_file='error_out'
 
 
