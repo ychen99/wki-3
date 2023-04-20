@@ -176,7 +176,7 @@ def save_predictions(predictions: List[Dict[str,Any]], folder: str=None) -> None
 
 def get_3montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.ndarray,bool]:
     """
-    Funktion berechnet die 3 Montagen Fp1-F2, Fp2-F4, C3-P3 aus den gegebenen Ableitungen (Montagen)
+    Funktion berechnet die 3 Montagen Fp1-F3, Fp2-F4, C3-P3 aus den gegebenen Ableitungen (Montagen)
     zur selben Referenzelektrode. Falls nicht alle nötigen Elektroden vorhanden sind, wird das entsprechende Signal durch 0 ersetzt. 
     ----------
     channels : List[str]
@@ -186,7 +186,7 @@ def get_3montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.n
     Returns
     -------
     montages : List[str]
-        Namen der Montagen ["Fp1-F2", "Fp2-F4", "C3-P3"]
+        Namen der Montagen ["Fp1-F3", "Fp2-F4", "C3-P3"]
     montage_data : ndarray
         Daten der Montagen
     montage_missing : bool
@@ -220,7 +220,7 @@ def get_3montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.n
 
 def get_6montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.ndarray,bool]:
     """
-    Funktion berechnet die 6 Montagen Fp1-F2, Fp2-F4, C3-P3, F3-C3, F4-C4, C4-P4 aus den gegebenen Ableitungen (Montagen)
+    Funktion berechnet die 6 Montagen Fp1-F3, Fp2-F4, C3-P3, F3-C3, F4-C4, C4-P4 aus den gegebenen Ableitungen (Montagen)
     zur selben Referenzelektrode. Falls nicht alle nötigen Elektroden vorhanden sind, wird das entsprechende Signal durch 0 ersetzt. 
     ----------
     channels : List[str]
@@ -230,7 +230,7 @@ def get_6montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.n
     Returns
     -------
     montages : List[str]
-        Namen der Montagen ["Fp1-F2", "Fp2-F4", "C3-P3", "F3-C3", "F4-C4", "C4-P4"]
+        Namen der Montagen ["Fp1-F3", "Fp2-F4", "C3-P3", "F3-C3", "F4-C4", "C4-P4"]
     montage_data : ndarray
         Daten der Montagen
     montage_missing : bool
