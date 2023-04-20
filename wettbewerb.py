@@ -124,12 +124,14 @@ class EEGDataset:
 #                   "offset_confidence":offset_confidence}
 def save_predictions(predictions: List[Dict[str,Any]], folder: str=None) -> None:
     """
-    Funktion speichert the gegebenen predictions in eine CSV-Datei mit dem name PREDICTIONS.csv
+    Funktion speichert the gegebenen predictions in eine CSV-Datei mit dem name PREDICTIONS.csv. 
+    Alle Optionalen Vorherhsagen werden mit Standardwerten ersetzt.
     Parameters
     ----------
     predictions : List[Dict[str,Any]]
         Liste aus dictionaries. Jedes Dictionary enthält die Felder "id","seizure_present",
-                "seizure_confidence","onset","onset_confidence","offset","offset_confidence"
+                "seizure_confidence" (optional),"onset","onset_confidence" (optional),
+                "offset" (optional),"offset_confidence" (optional)
 	folder : str
 		Speicherort der predictions
     Returns
