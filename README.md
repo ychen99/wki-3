@@ -13,7 +13,7 @@ Dieses Repository enthält den Demo-Code zum Projektseminar "Wettbewerb künstli
  pip install -r requirements.txt
 ``` 
 5. Lade die Trainingsdaten herunter (in moodle verlinkt oder auf epilepsy-server), entpacke sie und lege Sie in einem Dateordner ab (Der Pfad ist im Trainingsskript bei uns hardcoded)
-5. Probiere aus, ob alles funktioniert, indem du einmal unseren Trainings, Predict und Scoring Code bei dir ausführst:
+5. Probiere aus, ob alles funktioniert, indem du einmal unseren Trainings, Predict und Scoring Code bei dir ausführst (und den Testdatenordner entsprechend anpasst):
 ```
 python train.py
 python predict_pretrained.py --test_dir ../test/

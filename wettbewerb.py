@@ -124,12 +124,14 @@ class EEGDataset:
 #                   "offset_confidence":offset_confidence}
 def save_predictions(predictions: List[Dict[str,Any]], folder: str=None) -> None:
     """
-    Funktion speichert the gegebenen predictions in eine CSV-Datei mit dem name PREDICTIONS.csv
+    Funktion speichert the gegebenen predictions in eine CSV-Datei mit dem name PREDICTIONS.csv. 
+    Alle Optionalen Vorherhsagen werden mit Standardwerten ersetzt.
     Parameters
     ----------
     predictions : List[Dict[str,Any]]
         Liste aus dictionaries. Jedes Dictionary enthält die Felder "id","seizure_present",
-                "seizure_confidence","onset","onset_confidence","offset","offset_confidence"
+                "seizure_confidence" (optional),"onset","onset_confidence" (optional),
+                "offset" (optional),"offset_confidence" (optional)
 	folder : str
 		Speicherort der predictions
     Returns
@@ -197,26 +199,50 @@ def get_3montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.n
     _,m = np.shape(data)
     montage_data = np.zeros([3,m])
     montage_missing = 0
-    try:
-        montage_data[0,:] = data[channels.index('Fp1')] - data[channels.index('F3')]
-        montages.append('Fp1-F3')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    try:
-        montage_data[1,:] = data[channels.index('Fp2')] - data[channels.index('F4')]
-        montages.append('Fp2-F4')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    try:
-        montage_data[2,:] = data[channels.index('C3')] - data[channels.index('P3')]
-        montages.append('C3-P3')
-    except:
-        montage_missing = 1
-        montages.append('error')
+    if '-' in channels:
+        try:
+            montage_data[0,:] = data[channels.index('Fp1-F3')]
+            montages.append('Fp1-F3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[1,:] = data[channels.index('Fp2-F4')]
+            montages.append('Fp2-F4')
+        except:
+            montage_missing = 1
+            montages.append('error')        
+        try:
+            montage_data[2,:] = data[channels.index('C3-P3')]
+            montages.append('C3-P3')
+        except:
+            montage_missing = 1
+            montages.append('error')
 
-    return (montages,montage_data,montage_missing)
+        return (montages,montage_data,montage_missing)
+
+    else:
+        try:
+            montage_data[0,:] = data[channels.index('Fp1')] - data[channels.index('F3')]
+            montages.append('Fp1-F3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[1,:] = data[channels.index('Fp2')] - data[channels.index('F4')]
+            montages.append('Fp2-F4')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[2,:] = data[channels.index('C3')] - data[channels.index('P3')]
+            montages.append('C3-P3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+
+        return (montages,montage_data,montage_missing)
+
 
 def get_6montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.ndarray,bool]:
     """
@@ -241,40 +267,82 @@ def get_6montages(channels: List[str], data: np.ndarray) -> Tuple[List[str],np.n
     _,m = np.shape(data)
     montage_data = np.zeros([6,m])
     montage_missing = 0
-    try:
-        montage_data[0,:] = data[channels.index('Fp1')] - data[channels.index('F3')]
-        montages.append('Fp1-F3')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    try:
-        montage_data[1,:] = data[channels.index('Fp2')] - data[channels.index('F4')]
-        montages.append('Fp2-F4')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    try:
-        montage_data[2,:] = data[channels.index('C3')] - data[channels.index('P3')]
-        montages.append('C3-P3')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    try:
-        montage_data[3,:] = data[channels.index('F3')] - data[channels.index('C3')]
-        montages.append('F3-C3')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    try:
-        montage_data[4,:] = data[channels.index('F4')] - data[channels.index('C4')]
-        montages.append('F4-C4')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    try:
-        montage_data[5,:] = data[channels.index('C4')] - data[channels.index('P4')]
-        montages.append('C4-P4')
-    except:
-        montage_missing = 1
-        montages.append('error')
-    return (montages,montage_data,montage_missing)
+    if '-' in channels:
+        try:
+            montage_data[0,:] = data[channels.index('Fp1-F3')]
+            montages.append('Fp1-F3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[1,:] = data[channels.index('Fp2-F4')]
+            montages.append('Fp2-F4')
+        except:
+            montage_missing = 1
+            montages.append('error')        
+        try:
+            montage_data[2,:] = data[channels.index('C3-P3')]
+            montages.append('C3-P3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[3,:] = data[channels.index('F3-C3')]
+            montages.append('F3-C3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[4,:] = data[channels.index('F4-C4')]
+            montages.append('F4-C4')
+        except:
+            montage_missing = 1
+            montages.append('error')        
+        try:
+            montage_data[5,:] = data[channels.index('C4-P4')]
+            montages.append('C4-P4')
+        except:
+            montage_missing = 1
+            montages.append('error')
+
+        return (montages,montage_data,montage_missing)
+
+    else:         
+        try:
+            montage_data[0,:] = data[channels.index('Fp1')] - data[channels.index('F3')]
+            montages.append('Fp1-F3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[1,:] = data[channels.index('Fp2')] - data[channels.index('F4')]
+            montages.append('Fp2-F4')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[2,:] = data[channels.index('C3')] - data[channels.index('P3')]
+            montages.append('C3-P3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[3,:] = data[channels.index('F3')] - data[channels.index('C3')]
+            montages.append('F3-C3')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[4,:] = data[channels.index('F4')] - data[channels.index('C4')]
+            montages.append('F4-C4')
+        except:
+            montage_missing = 1
+            montages.append('error')
+        try:
+            montage_data[5,:] = data[channels.index('C4')] - data[channels.index('P4')]
+            montages.append('C4-P4')
+        except:
+            montage_missing = 1
+            montages.append('error')
+
+        return (montages,montage_data,montage_missing)
