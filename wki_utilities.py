@@ -53,7 +53,7 @@ class Database:
                          performance_metric: float,f1_score: float,
                          sensitivity : float,PPV : float,detection_error_onset : float,
                          detection_error_offset : float,model_nr: int,run_time: int,
-                         confusion_matrix: List[int]=None) -> int:
+                         confusion_matrix: List[int]=None, nr_records_failed: int = -1) -> int:
         '''
     
         Parameters
@@ -87,12 +87,12 @@ class Database:
             team_nr=None
         
         sql = "INSERT INTO wki_scored_runs(dataset_nr,team_nr,run_count_team,\
-        datetime,performance_metric,f1_score,sensitivity,PPB,detection_error_onset,\
-            detection_error_offset,model_nr,run_time)\
+        datetime,performance_metric,f1_score,sensitivity,PPV,detection_error_onset,\
+            detection_error_offset,model_nr,run_time,nr_records_failed)\
         VALUES(%s,%s,%s,%s,%s,%s,%s,%s)"
         val = (dataset_nr,team_nr,run_count_team,time_str,performance_metric,f1_score,
                sensitivity,PPV,detection_error_onset,
-               detection_error_offset,model_nr,run_time_str)
+               detection_error_offset,model_nr,run_time_str,nr_records_failed)
         cursor.execute(sql,val)
         entry_id = cursor.lastrowid
         self.mydb.commit()

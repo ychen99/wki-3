@@ -58,6 +58,7 @@ def wki_evaluate(data_folder,team_id,datasets_string,model_name,output_file='err
     for dataset_id in datasets:
         dataset_folder =  db.get_dataset_folder(dataset_id)
         dataset_name = os.path.basename(data_folder)  
+        fail_counter = 0
         
         ### make predictions & measure time
         
@@ -82,6 +83,8 @@ def wki_evaluate(data_folder,team_id,datasets_string,model_name,output_file='err
                     else : 
                         print("Exception ocurred for record",id)
                         print(e)
+                        fail_counter+=1
+                        
             print('Prediction SUCCESSFULL')
             print(f"(for model {model_name} and team_id {team_id})")
         except Exception as e:
@@ -99,7 +102,7 @@ def wki_evaluate(data_folder,team_id,datasets_string,model_name,output_file='err
         
             db.put_scored_entry(dataset_id,team_id,new_nr_runs,performance_metric,F1,
                                 sensitivity,PPV,detection_error_onset,detection_error_offset,
-                                model_id,run_times[dataset_id],confusion_matrix)
+                                model_id,run_times[dataset_id],confusion_matrix,fail_counter)
         else:
             db.put_unscored_entry(dataset_id,team_id,model_id,run_times[dataset_id],output_file)
                 
